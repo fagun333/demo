@@ -56,14 +56,14 @@ spec:
               scheme: HTTP
               port: 8282
             initialDelaySeconds: 10
-            periodSeconds: 20
+            periodSeconds: 5
           readinessProbe:
             httpGet:
               path: /health?bundles=true
               scheme: HTTP
               port: 8282
             initialDelaySeconds: 10
-            periodSeconds: 20
+            periodSeconds: 5
       volumes:
         - name: opa-policy
           configMap:
