@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opa-demo
+  labels:
+    app: opa-demo
+    app.kubernetes.io/name: opa-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opa-demo
+  template:
+    metadata:
+      labels:
+        app: opa-demo
+        app.kubernetes.io/name: opa-demo
+      #annotations:
+      #  proxy.istio.io/config: '{ "holdApplicationUntilProxyStarts": true }'
+    spec:
+      containers:
+        - name: opa-demo
+          image: opa-demo:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: "http-spring"
+        - name: opa
+          image: openpolicyagent/opa:latest-envoy
+          volumeMounts:
+            - readOnly: true
+              mountPath: /policy
+              name: opa-policy
+            - readOnly: true
+              mountPath: /config
+              name: opa-istio-config
+          args:
+            - "run"
+            - "--log-level"
+            - "info"
+            - "--server"
+            - "--config-file=/config/config.yaml"
+            - "/policy"
+            - "--addr=localhost:8181"
+            - "--diagnostic-addr=0.0.0.0:8282"
+            - "--set=decision_logs.console=true"
+            - "--set=status.console=true"
+            - "--set=log-level=info"
+            #- "--set=plugins.envoy_ext_authz_grpc.addr=:9191"
+            #- "--set=plugins.envoy_ext_authz_grpc.path=istio/authz/allow"
+            - "--ignore=*_test.rego"
+            - "--ignore=.*"  # exclude hidden dirs created by Kubernetes
+          livenessProbe:
+            httpGet:
+              path: /health?plugins
+              scheme: HTTP
+              port: 8282
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health?bundles=true
+              scheme: HTTP
+              port: 8282
+            initialDelaySeconds: 10
+            periodSeconds: 20
+      volumes:
+        - name: opa-policy
+          configMap:
+            name: opa-policy
+        - name: opa-istio-config
+          configMap:
+            name: opa-istio-config
+---

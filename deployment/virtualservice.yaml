@@ -1,0 +1,15 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: opa-demo
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - opa-demo-gateway
+  http:
+    - route:
+      - destination:
+          host: opa-demo
+          port:
+            number: 8080
